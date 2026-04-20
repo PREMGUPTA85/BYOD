@@ -2,12 +2,12 @@
 // Handles all teacher/admin features: view students, view logs, manage restrictions, assign tasks
 
 const User = require('../models/User');
-const ActivityLog = require('../models/ActivityLog');
-const Restriction = require('../models/Restriction');
+const ActivityLog = require('../models/ActivityLog.js');
+const Restriction = require('../models/Restriction.js');
 const Task = require('../models/Task');
-const { readLogsAsString, streamCompressedLogs } = require('../utils/logReader');
+const { readLogsAsString, streamCompressedLogs } = require('../utils/logReader.js');
 const { validationResult } = require('express-validator');
-const File = require('../models/File');
+const File = require('../models/file');
 // GET /api/teacher/students
 // Returns list of all student accounts
 async function getStudents(req, res, next) {
