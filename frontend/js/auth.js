@@ -1,30 +1,4 @@
 // public/js/auth.js
-// Handles login and signup form submissions using fetch (no page reload)
-// Redirects user to correct dashboard based on their role after success
-
-// ─── Tab switching logic ─────────────────────────────────────────────────────
-function switchTab(tab) {
-  const loginForm  = document.getElementById('login-form');
-  const signupForm = document.getElementById('signup-form');
-  const tabLogin   = document.getElementById('tab-login');
-  const tabSignup  = document.getElementById('tab-signup');
-
-  if (tab === 'login') {
-    loginForm.classList.remove('hidden');
-    signupForm.classList.add('hidden');
-    tabLogin.classList.add('active');
-    tabSignup.classList.remove('active');
-  } else {
-    signupForm.classList.remove('hidden');
-    loginForm.classList.add('hidden');
-    tabSignup.classList.add('active');
-    tabLogin.classList.remove('active');
-  }
-  // Clear any messages when switching tabs
-  showMessage('auth-message', '', '');
-}
-
-// public/js/auth.js
 
 // ─── HELPER: SHOW MESSAGES ──────────────────────────────────────────────────
 function showMessage(elementId, text, type) {
@@ -33,7 +7,7 @@ function showMessage(elementId, text, type) {
   if (!text) { el.innerHTML = ''; return; }
   
   const icons = { success: '✅', danger: '❌', info: 'ℹ️' };
-  el.className = `alert alert-${type}`; // Ensure you have these CSS classes
+  el.className = `alert alert-${type}`; 
   el.innerHTML = `${icons[type] || ''} ${text}`;
 }
 
@@ -63,11 +37,12 @@ if (loginForm) {
       if (data.success) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        showMessage('auth-message', `Welcome back, ${data.user.name}!`, 'success');
+        showMessage('auth-message', `Welcome back, ${data.user.name}! Redirecting...`, 'success');
         
-        // Redirect based on role
+        // FIX: Ensure the path matches exactly what you have on Vercel
+        // If teacher.html is in the root, /teacher.html is correct.
         setTimeout(() => {
-          window.location.href = data.user.role === 'teacher' ? '/teacher.html' : '/student.html';
+          window.location.href = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
         }, 800);
       } else {
         showMessage('auth-message', data.message || 'Invalid credentials', 'danger');
@@ -109,10 +84,10 @@ if (signupForm) {
       if (data.success) {
         localStorage.setItem('token', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
-        showMessage('auth-message', 'Account created successfully!', 'success');
+        showMessage('auth-message', 'Account created! Redirecting...', 'success');
         
         setTimeout(() => {
-          window.location.href = data.user.role === 'teacher' ? '/teacher.html' : '/student.html';
+          window.location.href = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
         }, 1000);
       } else {
         const errorMsg = data.errors ? data.errors.map(e => e.msg).join(', ') : data.message;
@@ -126,3 +101,24 @@ if (signupForm) {
     }
   });
 }
+
+// Ensure the switchTab function is available globally
+window.switchTab = function(tab) {
+  const loginF  = document.getElementById('login-form');
+  const signupF = document.getElementById('signup-form');
+  const tabL    = document.getElementById('tab-login');
+  const tabS    = document.getElementById('tab-signup');
+
+  if (tab === 'login') {
+    loginF.classList.remove('hidden');
+    signupF.classList.add('hidden');
+    tabL.classList.add('active');
+    tabS.classList.remove('active');
+  } else {
+    signupF.classList.remove('hidden');
+    loginF.classList.add('hidden');
+    tabS.classList.add('active');
+    tabL.classList.remove('active');
+  }
+  showMessage('auth-message', '', '');
+};
