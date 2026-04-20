@@ -10,18 +10,37 @@ const socket = io('https://byod-44n0.onrender.com', {
 });
 
 // ─── Guard: redirect to login if not teacher ─────────────────────────────────
+// public/js/teacher.js
+
 async function checkAuth() {
+  // 1. Check LocalStorage first (The "Fast" Check)
+  const user = JSON.parse(localStorage.getItem('user'));
+  const token = localStorage.getItem('token');
+
+  if (!user || !token || user.role !== 'teacher') {
+    console.log("No user found in localStorage, redirecting...");
+    window.location.href = 'index.html';
+    return;
+  }
+
+  // Display name immediately from local data
+  document.getElementById('teacher-name-display').textContent = user.name;
+
+  // 2. Verify with Backend (The "Deep" Check)
   try {
-    const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+    const res = await fetch('https://byod-44n0.onrender.com/api/auth/me', {
+      headers: {
+        'Authorization': `Bearer ${token}` // Send the token explicitly
+      }
+    });
     const data = await res.json();
-    if (!data.success || data.user.role !== 'teacher') {
-      window.location.href = '/index.html';
-    } else {
-      const nameDisplay = document.getElementById('teacher-name-display');
-      if (nameDisplay) nameDisplay.textContent = data.user.name;
+    
+    if (!data.success) {
+      localStorage.clear(); // Token expired or invalid
+      window.location.href = 'index.html';
     }
   } catch (err) {
-    window.location.href = '/index.html';
+    console.error("Backend auth check failed, but staying on page due to local data.");
   }
 }
 
