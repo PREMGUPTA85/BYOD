@@ -37,9 +37,10 @@ if (loginForm) {
         localStorage.setItem('user', JSON.stringify(data.user));
         showMessage('auth-message', `Welcome back, ${data.user.name}! Redirecting...`, 'success');
         
-        // Use relative paths to avoid Vercel routing issues
+        // Use relative paths. If teacher.html is in the root, this will find it.
         setTimeout(() => {
-          window.location.href = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
+          const target = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
+          window.location.href = window.location.origin + '/' + target;
         }, 800);
       } else {
         showMessage('auth-message', data.message || 'Invalid credentials', 'danger');
@@ -84,7 +85,8 @@ if (signupForm) {
         showMessage('auth-message', 'Account created! Redirecting...', 'success');
         
         setTimeout(() => {
-          window.location.href = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
+          const target = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
+          window.location.href = window.location.origin + '/' + target;
         }, 1000);
       } else {
         const errorMsg = data.errors ? data.errors.map(e => e.msg).join(', ') : data.message;
@@ -99,12 +101,14 @@ if (signupForm) {
   });
 }
 
-// Global Tab Switcher
+// ─── TAB SWITCHING LOGIC ─────────────────────────────────────────────────────
 window.switchTab = function(tab) {
   const loginF  = document.getElementById('login-form');
   const signupF = document.getElementById('signup-form');
   const tabL    = document.getElementById('tab-login');
   const tabS    = document.getElementById('tab-signup');
+
+  if (!loginF || !signupF) return;
 
   if (tab === 'login') {
     loginF.classList.remove('hidden');
