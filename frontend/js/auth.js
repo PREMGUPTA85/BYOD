@@ -37,10 +37,10 @@ if (loginForm) {
         localStorage.setItem('user', JSON.stringify(data.user));
         showMessage('auth-message', `Welcome back, ${data.user.name}! Redirecting...`, 'success');
         
-        // REDIRECT FIX: Including the 'frontend' folder path
+        // REDIRECT FIX: Explicitly pointing to the /frontend/ subfolder
         setTimeout(() => {
-          const page = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
-          window.location.href = window.location.origin + '/frontend/' + page;
+          const targetPage = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
+          window.location.href = window.location.origin + '/frontend/' + targetPage;
         }, 800);
       } else {
         showMessage('auth-message', data.message || 'Invalid credentials', 'danger');
@@ -84,9 +84,10 @@ if (signupForm) {
         localStorage.setItem('user', JSON.stringify(data.user));
         showMessage('auth-message', 'Account created! Redirecting...', 'success');
         
+        // REDIRECT FIX: Explicitly pointing to the /frontend/ subfolder
         setTimeout(() => {
-          const page = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
-          window.location.href = window.location.origin + '/frontend/' + page;
+          const targetPage = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
+          window.location.href = window.location.origin + '/frontend/' + targetPage;
         }, 1000);
       } else {
         const errorMsg = data.errors ? data.errors.map(e => e.msg).join(', ') : data.message;
@@ -109,15 +110,15 @@ window.switchTab = function(tab) {
   const tabS    = document.getElementById('tab-signup');
 
   if (tab === 'login') {
-    loginF.classList.remove('hidden');
-    signupF.classList.add('hidden');
-    tabL.classList.add('active');
-    tabS.classList.remove('active');
+    loginF?.classList.remove('hidden');
+    signupF?.classList.add('hidden');
+    tabL?.classList.add('active');
+    tabS?.classList.remove('active');
   } else {
-    signupF.classList.remove('hidden');
-    loginF.classList.add('hidden');
-    tabS.classList.add('active');
-    tabL.classList.remove('active');
+    signupF?.classList.remove('hidden');
+    loginF?.classList.add('hidden');
+    tabS?.classList.add('active');
+    tabL?.classList.remove('active');
   }
   showMessage('auth-message', '', '');
 };
