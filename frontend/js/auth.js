@@ -1,5 +1,3 @@
-// public/js/auth.js
-
 // ─── HELPER: SHOW MESSAGES ──────────────────────────────────────────────────
 function showMessage(elementId, text, type) {
   const el = document.getElementById(elementId);
@@ -39,8 +37,7 @@ if (loginForm) {
         localStorage.setItem('user', JSON.stringify(data.user));
         showMessage('auth-message', `Welcome back, ${data.user.name}! Redirecting...`, 'success');
         
-        // FIX: Ensure the path matches exactly what you have on Vercel
-        // If teacher.html is in the root, /teacher.html is correct.
+        // Use relative paths to avoid Vercel routing issues
         setTimeout(() => {
           window.location.href = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
         }, 800);
@@ -48,7 +45,7 @@ if (loginForm) {
         showMessage('auth-message', data.message || 'Invalid credentials', 'danger');
       }
     } catch (err) {
-      showMessage('auth-message', 'Server connection failed. Try again later.', 'danger');
+      showMessage('auth-message', 'Server connection failed.', 'danger');
     } finally {
       btn.textContent = '🔐 Login';
       btn.disabled = false;
@@ -102,7 +99,7 @@ if (signupForm) {
   });
 }
 
-// Ensure the switchTab function is available globally
+// Global Tab Switcher
 window.switchTab = function(tab) {
   const loginF  = document.getElementById('login-form');
   const signupF = document.getElementById('signup-form');
