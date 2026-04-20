@@ -69,7 +69,7 @@ app.use(session({
 
 
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'https://byod-ixp1.vercel.app',
   credentials: true
 }));
 
@@ -133,7 +133,7 @@ app.use(errorHandler);
 // ─── Start Server ─────────────────────────────────────────────────────────────
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
   console.log(`📚 BYOD Classroom Management System — Ready!`);
 });
