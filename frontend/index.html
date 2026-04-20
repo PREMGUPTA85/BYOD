@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BYOD Classroom — Login</title>
+  <meta name="description" content="Secure login portal for the BYOD Classroom Management System. Students and teachers can sign in to access their dashboard." />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+
+      <!-- Logo / Branding -->
+      <div class="auth-logo">
+        <h1>🎓 BYOD Classroom</h1>
+        <p>Securing & Increasing Productivity</p>
+      </div>
+
+      <!-- Tab buttons to switch between Login and Signup -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Login</button>
+        <button class="auth-tab"        id="tab-signup" onclick="switchTab('signup')">Sign Up</button>
+      </div>
+
+      <!-- Notification area for success/error messages -->
+      <div id="auth-message"></div>
+
+      <!-- ── LOGIN FORM ─────────────────────────────────────── -->
+      <form id="login-form" autocomplete="on">
+        <div class="form-group">
+          <label class="form-label" for="login-email">Email Address</label>
+          <input class="form-control" type="email" id="login-email" name="email"
+                 placeholder="you@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input class="form-control" type="password" id="login-password" name="password"
+                 placeholder="••••••" required />
+        </div>
+        <button class="btn btn-primary btn-full mt-1" type="submit" id="login-btn">
+          🔐 Login
+        </button>
+      </form>
+
+      <!-- ── SIGNUP FORM ─────────────────────────────────────── -->
+      <form id="signup-form" class="hidden" autocomplete="on">
+        <div class="form-group">
+          <label class="form-label" for="signup-name">Full Name</label>
+          <input class="form-control" type="text" id="signup-name" name="name"
+                 placeholder="Your full name" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-email">Email Address</label>
+          <input class="form-control" type="email" id="signup-email" name="email"
+                 placeholder="you@example.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-password">Password</label>
+          <input class="form-control" type="password" id="signup-password" name="password"
+                 placeholder="Min 6 characters" required minlength="6" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="signup-role">Register As</label>
+          <select class="form-control" id="signup-role" name="role">
+            <option value="student">Student</option>
+            <option value="teacher">Teacher</option>
+          </select>
+        </div>
+        <button class="btn btn-success btn-full mt-1" type="submit" id="signup-btn">
+          ✅ Create Account
+        </button>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- Auth page JavaScript -->
+  <script src="/js/auth.js"></script>
+</body>
+</html>

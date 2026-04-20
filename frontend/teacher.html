@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Panel — BYOD Classroom</title>
+  <meta name="description" content="Teacher admin panel for the BYOD Classroom Management System. Monitor students, manage restrictions, view logs, and assign tasks." />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body class="page-wrapper">
+
+  <!-- ── Navbar ───────────────────────────────────────────────────── -->
+  <nav class="navbar">
+    <span class="navbar-brand">🎓 BYOD Classroom — Admin Panel</span>
+    <div class="navbar-info">
+      <span id="teacher-name-display">Loading...</span>
+      <span class="badge badge-warning">Teacher</span>
+      <button class="btn btn-secondary btn-sm" id="logout-btn">Logout</button>
+    </div>
+  </nav>
+
+  <!-- ── Stats Row ─────────────────────────────────────────────────── -->
+  <div style="padding: 1.5rem 1.5rem 0;">
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-value" id="stat-students">–</div>
+        <div class="stat-label">Total Students</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-restrictions">–</div>
+        <div class="stat-label">Blocked URLs</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-tasks">–</div>
+        <div class="stat-label">Tasks Assigned</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value" id="stat-logs">–</div>
+        <div class="stat-label">Log Entries</div>
+      </div>
+    </div>
+  </div>
+
+  <main class="dashboard-grid">
+
+    <!-- Card 1: All Students -->
+    <div class="card">
+      <div class="card-title">👨‍🎓 Registered Students</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Name</th><th>Email</th><th>Joined</th></tr>
+          </thead>
+          <tbody id="students-body">
+            <tr><td colspan="3" class="muted center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Card 2: Block/Unblock URLs -->
+    <div class="card">
+      <div class="card-title">🚫 Website Restrictions</div>
+      <div class="flex gap-1" style="margin-bottom:0.75rem;">
+        <input class="form-control" type="text" id="restriction-url" placeholder="e.g., youtube.com" />
+        <button class="btn btn-danger" id="add-restriction-btn" style="white-space:nowrap;">Block URL</button>
+      </div>
+      <div id="restriction-message" class="mt-1"></div>
+      <div class="table-wrap" style="margin-top: 0.75rem;">
+        <table>
+          <thead>
+            <tr><th>Blocked URL</th><th>Added By</th><th>Action</th></tr>
+          </thead>
+          <tbody id="restrictions-body">
+            <tr><td colspan="3" class="muted center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Card 3: Assign Tasks -->
+    <div class="card">
+      <div class="card-title">📋 Assign Task</div>
+      <form id="task-form">
+        <div class="form-group">
+          <label class="form-label">Task Title</label>
+          <input class="form-control" type="text" id="task-title" placeholder="e.g., Complete Chapter 5 Exercise" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input class="form-control" type="text" id="task-desc" placeholder="Optional details..." />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Assign To</label>
+          <select class="form-control" id="task-assign">
+            <option value="all">All Students</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Due Date</label>
+          <input class="form-control" type="date" id="task-due" />
+        </div>
+        <button class="btn btn-primary btn-full" type="submit">➕ Assign Task</button>
+        <div id="task-message" class="mt-1"></div>
+      </form>
+    </div>
+
+    <!-- Card 4: Activity Logs (File Logs) -->
+    <div class="card">
+      <div class="card-title">📄 Activity Log File
+        <a href="/api/teacher/logs/download" id="download-logs-link" style="margin-left:auto;">
+          <button class="btn btn-secondary btn-sm">⬇ Download .gz</button>
+        </a>
+      </div>
+      <div class="log-box" id="log-box">Loading logs...</div>
+      <button class="btn btn-secondary btn-sm mt-1" id="refresh-logs-btn">🔄 Refresh</button>
+    </div>
+
+    <!-- Card 5: Structured DB Logs -->
+    <div class="card">
+      <div class="card-title">🗂 Student Activity (Database)</div>
+      <div class="flex gap-1" style="margin-bottom: 0.75rem;">
+        <input class="form-control" type="text" id="log-filter" placeholder="Filter by student name..." />
+        <button class="btn btn-secondary" id="filter-logs-btn">Search</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Student</th><th>Action</th><th>Details</th><th>Time</th></tr>
+          </thead>
+          <tbody id="db-logs-body">
+            <tr><td colspan="4" class="muted center">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Card 6: Send Announcement (Socket.IO) -->
+    <div class="card">
+      <div class="card-title">📢 Send Announcement</div>
+      <p class="muted" style="margin-bottom: 0.75rem;">Message will be sent to ALL connected students in real-time.</p>
+      <div class="form-group">
+        <textarea class="form-control" id="announcement-text" rows="3"
+          placeholder="Type your announcement here..." style="resize:vertical;"></textarea>
+      </div>
+      <button class="btn btn-primary btn-full" id="send-announcement-btn">📣 Send to All Students</button>
+      <div id="ann-message" class="mt-1"></div>
+
+      <!-- Sent announcements history -->
+      <div style="margin-top:1rem; border-top: 1px solid var(--border); padding-top: 1rem;">
+        <div class="card-title" style="font-size:0.85rem;">Sent Announcements</div>
+        <div class="announcement-list" id="sent-announcements">
+          <p class="muted">No announcements sent yet.</p>
+        </div>
+      </div>
+    </div>
+    <!-- Card 7: Upload Study Material -->
+<div class="card">
+  <div class="card-title">📎 Upload Study Material</div>
+
+  <div class="form-group">
+    <label class="form-label">Select File (PDF/PPT)</label>
+    <input class="form-control" type="file" id="fileInput" name="file">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Title</label>
+    <input class="form-control" type="text" id="file-title" placeholder="e.g., Chapter 5 Notes">
+  </div>
+
+  <div class="form-group">
+    <label class="form-label">Assign To</label>
+    <select class="form-control" id="file-assign">
+      <option value="all">All Students</option>
+    </select>
+  </div>
+
+  <button type="button" onclick="uploadFile()">Upload File</button>
+
+  <div id="upload-message" class="mt-1"></div>
+</div>
+
+  </main>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/socket-client.js"></script>
+  <script src="/js/teacher.js"></script>
+</body>
+</html>
