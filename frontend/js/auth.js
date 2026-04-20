@@ -37,10 +37,10 @@ if (loginForm) {
         localStorage.setItem('user', JSON.stringify(data.user));
         showMessage('auth-message', `Welcome back, ${data.user.name}! Redirecting...`, 'success');
         
-        // Use relative paths. If teacher.html is in the root, this will find it.
+        // REDIRECT FIX: Including the 'frontend' folder path
         setTimeout(() => {
-          const target = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
-          window.location.href = window.location.origin + '/' + target;
+          const page = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
+          window.location.href = window.location.origin + '/frontend/' + page;
         }, 800);
       } else {
         showMessage('auth-message', data.message || 'Invalid credentials', 'danger');
@@ -85,8 +85,8 @@ if (signupForm) {
         showMessage('auth-message', 'Account created! Redirecting...', 'success');
         
         setTimeout(() => {
-          const target = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
-          window.location.href = window.location.origin + '/' + target;
+          const page = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
+          window.location.href = window.location.origin + '/frontend/' + page;
         }, 1000);
       } else {
         const errorMsg = data.errors ? data.errors.map(e => e.msg).join(', ') : data.message;
@@ -107,8 +107,6 @@ window.switchTab = function(tab) {
   const signupF = document.getElementById('signup-form');
   const tabL    = document.getElementById('tab-login');
   const tabS    = document.getElementById('tab-signup');
-
-  if (!loginF || !signupF) return;
 
   if (tab === 'login') {
     loginF.classList.remove('hidden');
