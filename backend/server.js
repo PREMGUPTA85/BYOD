@@ -70,7 +70,9 @@ app.use(session({
 
 app.use(cors({
   origin: 'https://byod-ixp1.vercel.app',
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
