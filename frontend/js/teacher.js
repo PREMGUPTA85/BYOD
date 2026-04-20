@@ -228,31 +228,46 @@ window.removeRestriction = async function(id) {
 };
 
 // ─── Assign Task ──────────────────────────────────────────────────────────────
+// ─── Assign Task Logic ───────────────────────────────────────────────────────
 const taskForm = document.getElementById('task-form');
 if (taskForm) {
   taskForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // 1. Get the token from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showMsg('task-message', 'Session expired. Please log in again.', 'danger');
+      return;
+    }
+
     const title = document.getElementById('task-title').value.trim();
     const description = document.getElementById('task-desc').value.trim();
     const assignedTo = document.getElementById('task-assign').value;
     const dueDate = document.getElementById('task-due').value;
 
     try {
-      const res = await fetch(`${API_BASE}/teacher/tasks`, {
+      // 2. Point to the FULL Render URL
+      const res = await fetch('https://byod-44n0.onrender.com/api/teacher/tasks', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` // THIS IS THE "KEY"
+        },
         body: JSON.stringify({ title, description, assignedTo, dueDate }),
-        credentials: 'include'
       });
+      
       const data = await res.json();
+      
       if (data.success) {
-        showMsg('task-message', `✅ Task assigned!`, 'success');
+        showMsg('task-message', `✅ Task "${title}" assigned!`, 'success');
         taskForm.reset();
+        if (typeof loadTasks === 'function') loadTasks();
       } else {
-        showMsg('task-message', data.message || 'Failed to assign task.', 'danger');
+        showMsg('task-message', data.message || 'Access denied.', 'danger');
       }
     } catch (err) {
-      showMsg('task-message', 'Server error.', 'danger');
+      showMsg('task-message', 'Server error. Check if Render is awake.', 'danger');
     }
   });
 }
