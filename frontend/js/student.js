@@ -1,18 +1,32 @@
 // public/js/student.js
-// All student dashboard logic: load tasks, timer, URL checker, activity log
+const API_BASE = 'https://byod-44n0.onrender.com/api';
 
 // ─── Guard: redirect to login if not authenticated ───────────────────────────
 async function checkAuth() {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user'));
+
+  // Instant local check
+  if (!token || !user || user.role !== 'student') {
+    window.location.href = 'index.html';
+    return;
+  }
+
+  // Set name display immediately
+  const nameDisplay = document.getElementById('student-name-display');
+  if (nameDisplay) nameDisplay.textContent = user.name;
+
   try {
-    const res = await fetch('/api/auth/me', { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await res.json();
-    if (!data.success || data.user.role !== 'student') {
-      window.location.href = '/';
-    } else {
-      document.getElementById('student-name-display').textContent = data.user.name;
+    if (!data.success) {
+      localStorage.clear();
+      window.location.href = 'index.html';
     }
-  } catch {
-    window.location.href = '/';
+  } catch (err) {
+    console.warn("Auth server unreachable, using local session.");
   }
 }
 
@@ -27,17 +41,21 @@ function showMsg(id, text, type) {
 
 // ─── Load Assigned Tasks ─────────────────────────────────────────────────────
 async function loadTasks() {
+  const token = localStorage.getItem('token');
   try {
-    const res  = await fetch('/api/student/dashboard', { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/student/dashboard`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await res.json();
     const container = document.getElementById('tasks-list');
 
-    if (!data.success || data.tasks.length === 0) {
+    if (!container) return;
+
+    if (!data.success || !data.tasks || data.tasks.length === 0) {
       container.innerHTML = '<p class="muted">No tasks assigned yet.</p>';
       return;
     }
 
-    // Build an HTML list of task cards
     container.innerHTML = data.tasks.map(task => `
       <div style="border:1px solid var(--border);border-radius:8px;padding:0.75rem;margin-bottom:0.5rem;background:var(--surface2);">
         <div style="font-weight:600;margin-bottom:0.25rem;">📌 ${task.title}</div>
@@ -55,12 +73,17 @@ async function loadTasks() {
 
 // ─── Load My Activity Logs ───────────────────────────────────────────────────
 async function loadMyLogs() {
+  const token = localStorage.getItem('token');
   try {
-    const res  = await fetch('/api/student/my-logs', { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/student/my-logs`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await res.json();
     const tbody = document.getElementById('my-logs-body');
 
-    if (!data.success || data.logs.length === 0) {
+    if (!tbody) return;
+
+    if (!data.success || !data.logs || data.logs.length === 0) {
       tbody.innerHTML = '<tr><td colspan="3" class="muted center">No activity logged yet.</td></tr>';
       return;
     }
@@ -73,83 +96,75 @@ async function loadMyLogs() {
       </tr>
     `).join('');
   } catch {
-    document.getElementById('my-logs-body').innerHTML =
-      '<tr><td colspan="3" class="muted center">Error loading logs.</td></tr>';
+    document.getElementById('my-logs-body').innerHTML = '<tr><td colspan="3" class="muted center">Error loading logs.</td></tr>';
   }
 }
 
-// ─── Activity Logger (POST /api/student/log) ─────────────────────────────────
-document.getElementById('log-btn').addEventListener('click', async () => {
-  const action = document.getElementById('log-action').value.trim();
-  if (!action) { showMsg('log-message', 'Please enter an action to log.', 'danger'); return; }
+// ─── Activity Logger ─────────────────────────────────────────────────────────
+const logBtn = document.getElementById('log-btn');
+if (logBtn) {
+  logBtn.addEventListener('click', async () => {
+    const token = localStorage.getItem('token');
+    const action = document.getElementById('log-action').value.trim();
+    if (!action) { showMsg('log-message', 'Please enter an action to log.', 'danger'); return; }
 
-  try {
-    const res  = await fetch('/api/student/log', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, details: 'Logged from student dashboard' }),
-      credentials: 'include'
-    });
-    const data = await res.json();
-    if (data.success) {
-      showMsg('log-message', '✅ Activity logged!', 'success');
-      document.getElementById('log-action').value = '';
-      loadMyLogs(); // Refresh log table
-    } else {
-      showMsg('log-message', data.message || 'Failed to log.', 'danger');
+    try {
+      const res = await fetch(`${API_BASE}/student/log`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ action, details: 'Logged from student dashboard' })
+      });
+      const data = await res.json();
+      if (data.success) {
+        showMsg('log-message', '✅ Activity logged!', 'success');
+        document.getElementById('log-action').value = '';
+        loadMyLogs();
+      }
+    } catch {
+      showMsg('log-message', 'Error connecting to server.', 'danger');
     }
-  } catch {
-    showMsg('log-message', 'Error connecting to server.', 'danger');
-  }
-});
+  });
+}
 
 // ─── URL Checker ─────────────────────────────────────────────────────────────
-document.getElementById('check-url-btn').addEventListener('click', async () => {
-  const url    = document.getElementById('url-input').value.trim();
-  const result = document.getElementById('url-result');
+const checkUrlBtn = document.getElementById('check-url-btn');
+if (checkUrlBtn) {
+  checkUrlBtn.addEventListener('click', async () => {
+    const token = localStorage.getItem('token');
+    const url = document.getElementById('url-input').value.trim();
+    const result = document.getElementById('url-result');
 
-  if (!url) { result.className = 'url-result denied'; result.textContent = 'Please enter a URL.'; return; }
+    if (!url) { result.className = 'url-result denied'; result.textContent = 'Please enter a URL.'; return; }
 
-  try {
-    const res  = await fetch(`/api/student/check-url?url=${encodeURIComponent(url)}`, { credentials: 'include' });
-    const data = await res.json();
+    try {
+      const res = await fetch(`${API_BASE}/student/check-url?url=${encodeURIComponent(url)}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
 
-    result.className = `url-result ${data.allowed ? 'allowed' : 'denied'}`;
-    result.textContent = data.message;
-  } catch {
-    result.className = 'url-result denied';
-    result.textContent = '❌ Could not check URL. Server error.';
-  }
-});
-
-// ─── Productivity Timer ───────────────────────────────────────────────────────
-let seconds = 0;       // Total elapsed seconds
-let timerInterval = null; // setInterval handle
-
-// Format seconds → "HH:MM:SS"
-function formatTime(secs) {
-  const h = Math.floor(secs / 3600).toString().padStart(2, '0');
-  const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
-  const s = (secs % 60).toString().padStart(2, '0');
-  return `${h}:${m}:${s}`;
+      result.className = `url-result ${data.allowed ? 'allowed' : 'denied'}`;
+      result.textContent = data.message;
+    } catch {
+      result.className = 'url-result denied';
+      result.textContent = '❌ Could not check URL.';
+    }
+  });
 }
 
-function updateDisplay() {
-  document.getElementById('timer-display').textContent = formatTime(seconds);
-}
-
-
+// ─── Load Assigned Files ─────────────────────────────────────────────────────
 async function loadFiles() {
+  const token = localStorage.getItem('token');
   try {
-    const res = await fetch('http://byod-44n0.onrender.com/api/student/files', {
-      credentials: 'include'
+    const res = await fetch(`${API_BASE}/student/files`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
-
     const data = await res.json();
     const container = document.getElementById('files-container');
 
     if (!container) return;
-
     container.innerHTML = '';
 
     if (!data.files || data.files.length === 0) {
@@ -160,55 +175,75 @@ async function loadFiles() {
     data.files.forEach(file => {
       const div = document.createElement('div');
       div.style.marginBottom = "8px";
-
       div.innerHTML = `
-        📄 <a href="http://byod-44n0.onrender.com${file.fileUrl}" target="_blank">
+        📄 <a href="https://byod-44n0.onrender.com${file.fileUrl}" target="_blank">
           ${file.title}
         </a>
       `;
-
       container.appendChild(div);
     });
-
   } catch (err) {
     console.error("Error loading files:", err);
   }
 }
 
-// call it
+// ─── Timer Logic ─────────────────────────────────────────────────────────────
+let seconds = 0;
+let timerInterval = null;
 
+function formatTime(secs) {
+  const h = Math.floor(secs / 3600).toString().padStart(2, '0');
+  const m = Math.floor((secs % 3600) / 60).toString().padStart(2, '0');
+  const s = (secs % 60).toString().padStart(2, '0');
+  return `${h}:${m}:${s}`;
+}
 
+const timerDisplay = document.getElementById('timer-display');
+const startBtn = document.getElementById('start-timer-btn');
+const pauseBtn = document.getElementById('pause-timer-btn');
+const resetBtn = document.getElementById('reset-timer-btn');
 
-// Start button: start counting every second
-document.getElementById('start-timer-btn').addEventListener('click', () => {
-  if (timerInterval) return; // Already running
-  timerInterval = setInterval(() => {
-    seconds++;
-    updateDisplay();
-  }, 1000);
-});
+if (startBtn) {
+  startBtn.addEventListener('click', () => {
+    if (timerInterval) return;
+    timerInterval = setInterval(() => {
+      seconds++;
+      if (timerDisplay) timerDisplay.textContent = formatTime(seconds);
+    }, 1000);
+  });
+}
 
-// Pause button: stop counting
-document.getElementById('pause-timer-btn').addEventListener('click', () => {
-  clearInterval(timerInterval);
-  timerInterval = null;
-});
+if (pauseBtn) {
+  pauseBtn.addEventListener('click', () => {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  });
+}
 
-// Reset button: stop and reset to zero
-document.getElementById('reset-timer-btn').addEventListener('click', () => {
-  clearInterval(timerInterval);
-  timerInterval = null;
-  seconds = 0;
-  updateDisplay();
-});
+if (resetBtn) {
+  resetBtn.addEventListener('click', () => {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    seconds = 0;
+    if (timerDisplay) timerDisplay.textContent = formatTime(0);
+  });
+}
 
 // ─── Logout ──────────────────────────────────────────────────────────────────
-document.getElementById('logout-btn').addEventListener('click', async () => {
-  await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-  window.location.href = '/';
-});
+const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', async () => {
+    const token = localStorage.getItem('token');
+    await fetch(`${API_BASE}/auth/logout`, { 
+      method: 'POST', 
+      headers: { 'Authorization': `Bearer ${token}` } 
+    });
+    localStorage.clear();
+    window.location.href = 'index.html';
+  });
+}
 
-// ─── Init: run all loaders when page loads ───────────────────────────────────
+// ─── Init ────────────────────────────────────────────────────────────────────
 checkAuth();
 loadTasks();
 loadMyLogs();

@@ -6,8 +6,17 @@ const API_BASE = 'https://byod-44n0.onrender.com/api';
 
 // 2. Initialize Socket.IO (Ensure the CDN is in your teacher.html)
 const socket = io('https://byod-44n0.onrender.com', {
-  transports: ['websocket', 'polling'],
+  transports: ['websocket'], // Force WebSocket only to stop 404 polling errors
+  upgrade: false,
   withCredentials: true
+});
+
+socket.on('connect', () => {
+  console.log('Successfully connected to Render Socket server:', socket.id);
+});
+
+socket.on('connect_error', (err) => {
+  console.error('Socket Connection Error:', err.message);
 });
 
 // ─── Guard: redirect to login if not teacher ─────────────────────────────────
