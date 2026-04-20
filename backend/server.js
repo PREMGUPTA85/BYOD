@@ -36,11 +36,13 @@ const io = new Server(server, {
 });
 
 app.use(cors({
-  origin: 'https://byod-ixp1.vercel.app',
+  origin: 'https://byod-umber.vercel.app',
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+app.options('*', cors());
 // ─── Connect to MongoDB ──────────────────────────────────────────────────────
 
 mongoose.connect(process.env.MONGO_URI)
