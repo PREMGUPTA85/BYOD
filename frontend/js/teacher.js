@@ -6,6 +6,7 @@ const API_BASE = 'https://byod-44n0.onrender.com/api';
 
 // 2. Initialize Socket.IO (Ensure the CDN is in your teacher.html)
 const socket = io('https://byod-44n0.onrender.com', {
+  transports: ['websocket', 'polling'],
   withCredentials: true
 });
 
@@ -13,37 +14,36 @@ const socket = io('https://byod-44n0.onrender.com', {
 // public/js/teacher.js
 
 async function checkAuth() {
-  // 1. Check LocalStorage first (The "Fast" Check)
-  const user = JSON.parse(localStorage.getItem('user'));
   const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user'));
 
-  if (!user || !token || user.role !== 'teacher') {
-    console.log("No user found in localStorage, redirecting...");
+  // 1. Instant local check to stop the redirect loop
+  if (!token || !user || user.role !== 'teacher') {
     window.location.href = 'index.html';
     return;
   }
 
-  // Display name immediately from local data
-  document.getElementById('teacher-name-display').textContent = user.name;
-
-  // 2. Verify with Backend (The "Deep" Check)
+  // 2. Verify with the server using the Token
   try {
     const res = await fetch('https://byod-44n0.onrender.com/api/auth/me', {
+      method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}` // Send the token explicitly
+        'Authorization': `Bearer ${token}`, // CRITICAL: Send the token here
+        'Content-Type': 'application/json'
       }
     });
-    const data = await res.json();
     
+    const data = await res.json();
     if (!data.success) {
-      localStorage.clear(); // Token expired or invalid
+      localStorage.clear();
       window.location.href = 'index.html';
+    } else {
+      document.getElementById('teacher-name-display').textContent = data.user.name;
     }
   } catch (err) {
-    console.error("Backend auth check failed, but staying on page due to local data.");
+    console.error("Auth server unreachable, staying on page.");
   }
 }
-
 // ─── Helper: inline message ──────────────────────────────────────────────────
 function showMsg(id, text, type) {
   const el = document.getElementById(id);
