@@ -1,13 +1,14 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite';
+import { resolve } from 'path';
 
 export default defineConfig({
-  server: {
-    proxy: {
-      '/api': 'http://localhost:3000',
-      '/socket.io': {
-        target: 'http://localhost:3000',
-        ws: true
-      }
-    }
-  }
-})
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        teacher: resolve(__dirname, 'teacher.html'),
+        student: resolve(__dirname, 'student.html'),
+      },
+    },
+  },
+});

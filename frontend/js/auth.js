@@ -1,3 +1,5 @@
+// public/js/auth.js
+
 // ─── HELPER: SHOW MESSAGES ──────────────────────────────────────────────────
 function showMessage(elementId, text, type) {
   const el = document.getElementById(elementId);
@@ -37,10 +39,10 @@ if (loginForm) {
         localStorage.setItem('user', JSON.stringify(data.user));
         showMessage('auth-message', `Welcome back, ${data.user.name}! Redirecting...`, 'success');
         
-        // REDIRECT FIX: Since your files are in the ROOT on GitHub
+        // VITE FIX: Use a relative path. 
+        // Do not use window.location.origin here; let the browser resolve it.
         setTimeout(() => {
-          const target = data.user.role === 'teacher' ? '/teacher.html' : '/student.html';
-          window.location.href = target;
+          window.location.href = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
         }, 800);
       } else {
         showMessage('auth-message', data.message || 'Invalid credentials', 'danger');
@@ -85,8 +87,7 @@ if (signupForm) {
         showMessage('auth-message', 'Account created! Redirecting...', 'success');
         
         setTimeout(() => {
-          const target = data.user.role === 'teacher' ? '/teacher.html' : '/student.html';
-          window.location.href = target;
+          window.location.href = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
         }, 1000);
       } else {
         const errorMsg = data.errors ? data.errors.map(e => e.msg).join(', ') : data.message;
@@ -101,7 +102,7 @@ if (signupForm) {
   });
 }
 
-// ─── TAB SWITCHING LOGIC ─────────────────────────────────────────────────────
+// Global Tab Switcher
 window.switchTab = function(tab) {
   const loginF  = document.getElementById('login-form');
   const signupF = document.getElementById('signup-form');
