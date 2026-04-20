@@ -12,6 +12,12 @@ const cookieParser = require('cookie-parser');
 const session = require('express-session');
 const path = require('path');
 const cors = require('cors');
+app.use(cors({
+  origin: 'https://byod-ixp1.vercel.app',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 // Import our custom middleware
 const securityHeaders = require('./middleware/securityHeaders');
 const errorHandler = require('./middleware/errorHandler');
@@ -68,12 +74,7 @@ app.use(session({
 // CORS middleware (allows frontend on a different port to communicate with this backend)
 
 
-app.use(cors({
-  origin: 'https://byod-ixp1.vercel.app',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
 
