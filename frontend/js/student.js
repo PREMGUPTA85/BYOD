@@ -141,7 +141,7 @@ function updateDisplay() {
 
 async function loadFiles() {
   try {
-    const res = await fetch('http://localhost:3000/api/student/files', {
+    const res = await fetch('http://byod-44n0.onrender.com/api/student/files', {
       credentials: 'include'
     });
 
@@ -162,7 +162,7 @@ async function loadFiles() {
       div.style.marginBottom = "8px";
 
       div.innerHTML = `
-        📄 <a href="http://localhost:3000${file.fileUrl}" target="_blank">
+        📄 <a href="http://byod-44n0.onrender.com${file.fileUrl}" target="_blank">
           ${file.title}
         </a>
       `;

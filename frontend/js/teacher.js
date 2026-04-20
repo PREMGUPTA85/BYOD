@@ -272,7 +272,7 @@ async function uploadFile() {
   formData.append('title', title);
   formData.append('assignedTo', assignedTo);
 
-  const res = await fetch('http://localhost:3000/api/teacher/upload', {
+  const res = await fetch('http://byod-44n0.onrender.com/api/teacher/upload', {
     method: 'POST',
     body: formData,
     credentials: 'include'
