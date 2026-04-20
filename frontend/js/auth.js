@@ -37,10 +37,10 @@ if (loginForm) {
         localStorage.setItem('user', JSON.stringify(data.user));
         showMessage('auth-message', `Welcome back, ${data.user.name}! Redirecting...`, 'success');
         
-        // REDIRECT FIX: Explicitly pointing to the /frontend/ subfolder
+        // REDIRECT FIX: Since your files are in the ROOT on GitHub
         setTimeout(() => {
-          const targetPage = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
-          window.location.href = window.location.origin + '/frontend/' + targetPage;
+          const target = data.user.role === 'teacher' ? '/teacher.html' : '/student.html';
+          window.location.href = target;
         }, 800);
       } else {
         showMessage('auth-message', data.message || 'Invalid credentials', 'danger');
@@ -84,10 +84,9 @@ if (signupForm) {
         localStorage.setItem('user', JSON.stringify(data.user));
         showMessage('auth-message', 'Account created! Redirecting...', 'success');
         
-        // REDIRECT FIX: Explicitly pointing to the /frontend/ subfolder
         setTimeout(() => {
-          const targetPage = data.user.role === 'teacher' ? 'teacher.html' : 'student.html';
-          window.location.href = window.location.origin + '/frontend/' + targetPage;
+          const target = data.user.role === 'teacher' ? '/teacher.html' : '/student.html';
+          window.location.href = target;
         }, 1000);
       } else {
         const errorMsg = data.errors ? data.errors.map(e => e.msg).join(', ') : data.message;
