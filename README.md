@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🎓 BYOD Classroom Management System
 
 ## Overview
@@ -66,3 +67,6 @@ The project has been separated into two distinct micro-architectures for scaling
 
 ## 🎨 Premium UI Guidelines
 The frontend utilizes a state-of-the-art Glassmorphism dark mode featuring heavily curated gradients (`var(--primary)`, `var(--secondary)`, `var(--accent)`), fluid micro-animations (cards hover transforms, glowing borders on focus), ensuring a visually stunning interaction that commands modern engagement standards.
+=======
+# BYOD
+>>>>>>> f57a282fbd6b8ed1f01f62e17e541c9dcbd6b213
