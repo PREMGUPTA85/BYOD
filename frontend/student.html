@@ -37,9 +37,12 @@
   <main class="dashboard-grid">
 
     <!-- Card 1: Assigned Tasks -->
-    <div class="card">
-      <div class="card-title">📋 Assigned Tasks</div>
-      <div id="tasks-list">
+    <div class="card" style="grid-row: span 2;">
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>📋 Assigned Tasks</span>
+        <button id="clear-tasks-btn" class="btn" style="background:var(--surface2); color:var(--text); padding:0.2rem 0.5rem; font-size:0.75rem; border:1px solid var(--border);">🧹 Clear Completed</button>
+      </div>
+      <div id="tasks-list" style="margin-top:0.75rem; max-height:400px; overflow-y:auto; padding-right:5px;">
         <p class="muted">Loading tasks...</p>
       </div>
     </div>

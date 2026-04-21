@@ -105,6 +105,21 @@
       </form>
     </div>
 
+    <!-- Card 3.5: Task Overview -->
+    <div class="card">
+      <div class="card-title">📊 Assigned Tasks Overview</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Task</th><th>Assigned To</th><th>Completed By</th><th>Action</th></tr>
+          </thead>
+          <tbody id="task-overview-body">
+            <tr><td colspan="3" class="muted center">Loading tasks...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Card 4: Activity Logs (File Logs) -->
     <div class="card">
       <div class="card-title">📄 Activity Log File
@@ -118,7 +133,10 @@
 
     <!-- Card 5: Structured DB Logs -->
     <div class="card">
-      <div class="card-title">🗂 Student Activity (Database)</div>
+      <div class="card-title" style="display:flex; justify-content:space-between; align-items:center;">
+        <span>🗂 Student Activity (Database)</span>
+        <button id="clear-db-logs-btn" class="btn" style="background:#dc3545; color:white; padding:0.3rem 0.8rem; font-size:0.8rem;">Clear All</button>
+      </div>
       <div class="flex gap-1" style="margin-bottom: 0.75rem;">
         <input class="form-control" type="text" id="log-filter" placeholder="Filter by student name..." />
         <button class="btn btn-secondary" id="filter-logs-btn">Search</button>
@@ -175,7 +193,7 @@
     </select>
   </div>
 
-  <button type="button" onclick="uploadFile()">Upload File</button>
+  <button type="button" class="btn btn-primary" id="upload-file-btn">Upload File</button>
 
   <div id="upload-message" class="mt-1"></div>
 </div>

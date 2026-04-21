@@ -1,43 +1,36 @@
 // public/js/teacher.js
-// All teacher/admin panel logic: load students, logs, restrictions, tasks, send announcements
 
-// 1. Define your Backend URL
-const API_BASE = 'https://byod-44n0.onrender.com/api';
+// ─── HELPER: BASE URL DETECTION ─────────────────────────────────────────────
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocal 
+  ? 'http://localhost:3000/api' 
+  : 'https://byod-44n0.onrender.com/api';
 
-// 2. Initialize Socket.IO (Ensure the CDN is in your teacher.html)
-const socket = io('https://byod-44n0.onrender.com', {
-  transports: ['websocket'], // Force WebSocket only to stop 404 polling errors
-  upgrade: false,
+const SOCKET_URL = isLocal 
+  ? 'http://localhost:3000' 
+  : 'https://byod-44n0.onrender.com';
+
+// Initialize Socket.IO
+const socket = io(SOCKET_URL, {
+  transports: ['websocket'],
   withCredentials: true
 });
 
-socket.on('connect', () => {
-  console.log('Successfully connected to Render Socket server:', socket.id);
-});
-
-socket.on('connect_error', (err) => {
-  console.error('Socket Connection Error:', err.message);
-});
-
-// ─── Guard: redirect to login if not teacher ─────────────────────────────────
-// public/js/teacher.js
-
+// ─── Guard: Authentication ───────────────────────────────────────────────────
 async function checkAuth() {
   const token = localStorage.getItem('token');
   const user = JSON.parse(localStorage.getItem('user'));
 
-  // 1. Instant local check to stop the redirect loop
   if (!token || !user || user.role !== 'teacher') {
     window.location.href = 'index.html';
     return;
   }
 
-  // 2. Verify with the server using the Token
   try {
-    const res = await fetch('https://byod-44n0.onrender.com/api/auth/me', {
+    const res = await fetch(`${API_BASE}/auth/me`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`, // CRITICAL: Send the token here
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
@@ -53,6 +46,7 @@ async function checkAuth() {
     console.error("Auth server unreachable, staying on page.");
   }
 }
+
 // ─── Helper: inline message ──────────────────────────────────────────────────
 function showMsg(id, text, type) {
   const el = document.getElementById(id);
@@ -65,9 +59,14 @@ function showMsg(id, text, type) {
 
 // ─── Load All Students ────────────────────────────────────────────────────────
 async function loadStudents() {
+  const token = localStorage.getItem('token');
   try {
-    const res = await fetch(`${API_BASE}/teacher/students`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/teacher/students`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await res.json();
+    window.allStudents = data.students || [];
+
     const tbody = document.getElementById('students-body');
     const taskSelect = document.getElementById('task-assign');
     const fileAssign = document.getElementById('file-assign');
@@ -92,6 +91,9 @@ async function loadStudents() {
     }
 
     // Populate dropdowns
+    if (taskSelect) taskSelect.innerHTML = '<option value="all">All Students</option>';
+    if (fileAssign) fileAssign.innerHTML = '<option value="all">All Students</option>';
+    
     data.students.forEach(s => {
       if (taskSelect) {
         const opt1 = document.createElement('option');
@@ -101,7 +103,7 @@ async function loadStudents() {
       }
       if (fileAssign) {
         const opt2 = document.createElement('option');
-        opt2.value = s.name;
+        opt2.value = s._id;
         opt2.textContent = s.name;
         fileAssign.appendChild(opt2);
       }
@@ -111,11 +113,14 @@ async function loadStudents() {
   }
 }
 
-// ─── Load DB Logs from MongoDB ────────────────────────────────────────────────
+// ─── Load DB Logs ────────────────────────────────────────────────────────────
 async function loadDbLogs(filter = '') {
+  const token = localStorage.getItem('token');
   try {
     const url = `${API_BASE}/teacher/logs/db${filter ? `?student=${encodeURIComponent(filter)}` : ''}`;
-    const res = await fetch(url, { credentials: 'include' });
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await res.json();
     const tbody = document.getElementById('db-logs-body');
 
@@ -134,7 +139,7 @@ async function loadDbLogs(filter = '') {
           <td>${log.userName}</td>
           <td>${log.action}</td>
           <td class="muted">${log.details || '—'}</td>
-          <td class="muted" style="white-space:nowrap;">${new Date(log.timestamp).toLocaleString()}</td>
+          <td class="muted">${new Date(log.timestamp).toLocaleString()}</td>
         </tr>
       `).join('');
     }
@@ -143,19 +148,144 @@ async function loadDbLogs(filter = '') {
   }
 }
 
-// Filter DB logs
-const filterBtn = document.getElementById('filter-logs-btn');
-if (filterBtn) {
-  filterBtn.addEventListener('click', () => {
-    const filter = document.getElementById('log-filter').value.trim();
-    loadDbLogs(filter);
-  });
+// ─── Clear DB Logs ───────────────────────────────────────────────────────────
+document.getElementById('clear-db-logs-btn')?.addEventListener('click', async () => {
+  if (!confirm('Are you sure you want to delete ALL activity logs? This cannot be undone.')) return;
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/teacher/logs`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      loadDbLogs();
+    }
+  } catch (err) {
+    console.error('Error clearing logs', err);
+  }
+});
+
+// ─── Load Text Logs ────────────────────────────────────────────────────────────
+async function loadTextLogs() {
+  const token = localStorage.getItem('token');
+  const logBox = document.getElementById('log-box');
+  if (!logBox) return;
+
+  logBox.textContent = 'Loading logs...';
+
+  try {
+    const res = await fetch(`${API_BASE}/teacher/logs`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      logBox.textContent = data.logs || 'No logs found.';
+    } else {
+      logBox.textContent = 'Failed to load logs.';
+    }
+  } catch (err) {
+    console.error("Error loading text logs", err);
+    logBox.textContent = 'Error connecting to server.';
+  }
 }
+
+document.getElementById('refresh-logs-btn')?.addEventListener('click', loadTextLogs);
+
+// Download Logs
+document.getElementById('download-logs-link')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/teacher/logs/download`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Failed to download logs');
+    
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'activity.log.gz';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    alert('Download failed.');
+  }
+});
+
+// ─── Load Tasks ────────────────────────────────────────────────────────────
+async function loadTasks() {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/teacher/tasks`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    
+    if (document.getElementById('stat-tasks')) {
+      document.getElementById('stat-tasks').textContent = data.tasks ? data.tasks.length : 0;
+    }
+
+    const tbody = document.getElementById('task-overview-body');
+    if (tbody) {
+      if (!data.tasks || data.tasks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="muted center">No tasks assigned yet.</td></tr>';
+        return;
+      }
+
+      // Helper to get name from ID
+      const getName = (id) => {
+        if (id === 'all') return 'All Students';
+        const st = window.allStudents?.find(s => s._id === id);
+        return st ? st.name : 'Unknown';
+      };
+
+      tbody.innerHTML = data.tasks.map(t => {
+        const assigned = getName(t.assignedTo);
+        const completed = t.completedBy && t.completedBy.length > 0 
+          ? t.completedBy.map(id => `<span class="badge badge-success">${getName(id)}</span>`).join(' ')
+          : '<span class="muted">None yet</span>';
+
+        return `
+          <tr>
+            <td><strong>${t.title}</strong><br><small class="muted">Due: ${t.dueDate || 'N/A'}</small></td>
+            <td>${assigned}</td>
+            <td>${completed}</td>
+            <td><button class="btn" style="background:#dc3545; color:white; padding:0.2rem 0.5rem; font-size:0.75rem;" onclick="deleteTask('${t._id}')">🗑️</button></td>
+          </tr>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    console.error("Error loading tasks", err);
+  }
+}
+
+window.deleteTask = async function(taskId) {
+  if (!confirm('Are you sure you want to delete this task?')) return;
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/teacher/tasks/${taskId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+      loadTasks();
+    }
+  } catch (err) {
+    console.error('Error deleting task', err);
+  }
+};
 
 // ─── Load Restrictions ────────────────────────────────────────────────────────
 async function loadRestrictions() {
+  const token = localStorage.getItem('token');
   try {
-    const res = await fetch(`${API_BASE}/teacher/restrictions`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/teacher/restrictions`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     const data = await res.json();
     const tbody = document.getElementById('restrictions-body');
 
@@ -163,19 +293,12 @@ async function loadRestrictions() {
       document.getElementById('stat-restrictions').textContent = data.restrictions ? data.restrictions.length : 0;
     }
 
-    if (!data.success || !data.restrictions || data.restrictions.length === 0) {
-      if (tbody) tbody.innerHTML = '<tr><td colspan="3" class="muted center">No URLs blocked yet.</td></tr>';
-      return;
-    }
-
     if (tbody) {
       tbody.innerHTML = data.restrictions.map(r => `
         <tr>
           <td><span class="badge badge-danger">🚫 ${r.url}</span></td>
           <td class="muted">${r.addedBy || 'Teacher'}</td>
-          <td>
-            <button class="btn btn-danger btn-sm" onclick="removeRestriction('${r._id}')">Remove</button>
-          </td>
+          <td><button class="btn btn-danger btn-sm" onclick="removeRestriction('${r._id}')">Remove</button></td>
         </tr>
       `).join('');
     }
@@ -184,130 +307,135 @@ async function loadRestrictions() {
   }
 }
 
-// Add a blocked URL
-const addRestrictBtn = document.getElementById('add-restriction-btn');
-if (addRestrictBtn) {
-  addRestrictBtn.addEventListener('click', async () => {
-    const urlInput = document.getElementById('restriction-url');
-    const url = urlInput.value.trim();
-    if (!url) { showMsg('restriction-message', 'Please enter a URL to block.', 'danger'); return; }
+// Add Restriction
+document.getElementById('add-restriction-btn')?.addEventListener('click', async () => {
+  const token = localStorage.getItem('token');
+  const urlInput = document.getElementById('restriction-url');
+  const url = urlInput.value.trim();
+  if (!url) return;
 
-    try {
-      const res = await fetch(`${API_BASE}/teacher/restrictions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-        credentials: 'include'
-      });
-      const data = await res.json();
-      if (data.success) {
-        showMsg('restriction-message', `✅ ${data.restriction.url} is now blocked.`, 'success');
-        urlInput.value = '';
-        loadRestrictions();
-      } else {
-        showMsg('restriction-message', data.message || 'Failed to add restriction.', 'danger');
-      }
-    } catch (err) {
-      showMsg('restriction-message', 'Server error.', 'danger');
-    }
-  });
-}
-
-// Remove a blocked URL
-window.removeRestriction = async function(id) {
   try {
-    const res = await fetch(`${API_BASE}/teacher/restrictions/${id}`, {
-      method: 'DELETE',
-      credentials: 'include'
+    const res = await fetch(`${API_BASE}/teacher/restrictions`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ url })
     });
     const data = await res.json();
-    if (data.success) loadRestrictions();
+    if (data.success) {
+      urlInput.value = '';
+      loadRestrictions();
+    }
+  } catch (err) {
+    showMsg('restriction-message', 'Server error.', 'danger');
+  }
+});
+
+// Remove Restriction
+window.removeRestriction = async function(id) {
+  const token = localStorage.getItem('token');
+  try {
+    await fetch(`${API_BASE}/teacher/restrictions/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    loadRestrictions();
   } catch (err) {
     alert('Failed to remove restriction.');
   }
 };
 
 // ─── Assign Task ──────────────────────────────────────────────────────────────
-// ─── Assign Task Logic ───────────────────────────────────────────────────────
-const taskForm = document.getElementById('task-form');
-if (taskForm) {
-  taskForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
+document.getElementById('task-form')?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem('token');
+  
+  const payload = {
+    title: document.getElementById('task-title').value.trim(),
+    description: document.getElementById('task-desc').value.trim(),
+    assignedTo: document.getElementById('task-assign').value,
+    dueDate: document.getElementById('task-due').value
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/teacher/tasks`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}` 
+      },
+      body: JSON.stringify(payload),
+    });
     
-    // 1. Get the token from localStorage
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showMsg('task-message', 'Session expired. Please log in again.', 'danger');
-      return;
+    const data = await res.json();
+    if (data.success) {
+      showMsg('task-message', `✅ Task assigned!`, 'success');
+      document.getElementById('task-form').reset();
+      loadTasks();
     }
-
-    const title = document.getElementById('task-title').value.trim();
-    const description = document.getElementById('task-desc').value.trim();
-    const assignedTo = document.getElementById('task-assign').value;
-    const dueDate = document.getElementById('task-due').value;
-
-    try {
-      // 2. Point to the FULL Render URL
-      const res = await fetch('https://byod-44n0.onrender.com/api/teacher/tasks', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // THIS IS THE "KEY"
-        },
-        body: JSON.stringify({ title, description, assignedTo, dueDate }),
-      });
-      
-      const data = await res.json();
-      
-      if (data.success) {
-        showMsg('task-message', `✅ Task "${title}" assigned!`, 'success');
-        taskForm.reset();
-        if (typeof loadTasks === 'function') loadTasks();
-      } else {
-        showMsg('task-message', data.message || 'Access denied.', 'danger');
-      }
-    } catch (err) {
-      showMsg('task-message', 'Server error. Check if Render is awake.', 'danger');
-    }
-  });
-}
+  } catch (err) {
+    showMsg('task-message', 'Server error.', 'danger');
+  }
+});
 
 // ─── Send Announcement ────────────────────────────────────────────────────────
-const annBtn = document.getElementById('send-announcement-btn');
-if (annBtn) {
-  annBtn.addEventListener('click', () => {
-    const text = document.getElementById('announcement-text').value.trim();
-    if (!text) { showMsg('ann-message', 'Please type a message.', 'danger'); return; }
-
-    const teacherName = document.getElementById('teacher-name-display').textContent;
-
-    socket.emit('announcement', {
-      message: text,
-      from: teacherName
+function loadTeacherAnnouncements() {
+  const list = document.getElementById('sent-announcements');
+  const saved = JSON.parse(localStorage.getItem('teacher_announcements') || '[]');
+  if (saved.length > 0 && list) {
+    list.innerHTML = '';
+    saved.forEach(a => {
+      const div = document.createElement('div');
+      div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
+      div.innerHTML = `<strong>You:</strong> ${a.message} <br><small class="muted">${a.time}</small>`;
+      list.appendChild(div);
     });
-
-    showMsg('ann-message', '✅ Announcement sent!', 'success');
-    document.getElementById('announcement-text').value = '';
-  });
+  }
 }
 
-// ─── Logout ──────────────────────────────────────────────────────────────────
-const logoutBtn = document.getElementById('logout-btn');
-if (logoutBtn) {
-  logoutBtn.addEventListener('click', async () => {
-    await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
-    window.location.href = '/index.html';
-  });
-}
+document.getElementById('send-announcement-btn')?.addEventListener('click', () => {
+  const text = document.getElementById('announcement-text').value.trim();
+  if (!text) return;
 
-// ─── File Upload ─────────────────────────────────────────────────────────────
-window.uploadFile = async function() {
+  const teacherName = document.getElementById('teacher-name-display').textContent;
+  socket.emit('announcement', { message: text, from: teacherName });
+
+  showMsg('ann-message', '✅ Announcement sent!', 'success');
+  document.getElementById('announcement-text').value = '';
+
+  const list = document.getElementById('sent-announcements');
+  if (list) {
+    const muted = list.querySelector('.muted');
+    if (muted) muted.remove();
+    
+    const time = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
+    div.innerHTML = `<strong>You:</strong> ${text} <br><small class="muted">${time}</small>`;
+    list.insertBefore(div, list.firstChild);
+
+    const saved = JSON.parse(localStorage.getItem('teacher_announcements') || '[]');
+    saved.unshift({ message: text, time });
+    localStorage.setItem('teacher_announcements', JSON.stringify(saved.slice(0, 50)));
+  }
+});
+
+// ─── Upload Study Material ────────────────────────────────────────────────────
+document.getElementById('upload-file-btn')?.addEventListener('click', async () => {
   const fileInput = document.getElementById('fileInput');
+  const titleInput = document.getElementById('file-title');
+  const assignSelect = document.getElementById('file-assign');
   const file = fileInput.files[0];
-  const title = document.getElementById('file-title').value;
-  const assignedTo = document.getElementById('file-assign').value;
+  const title = titleInput.value.trim();
+  const assignedTo = assignSelect.value;
+  const token = localStorage.getItem('token');
 
-  if (!file) { alert("Please select a file"); return; }
+  if (!file) {
+    showMsg('upload-message', 'Please select a file.', 'danger');
+    return;
+  }
 
   const formData = new FormData();
   formData.append('file', file);
@@ -317,20 +445,41 @@ window.uploadFile = async function() {
   try {
     const res = await fetch(`${API_BASE}/teacher/upload`, {
       method: 'POST',
-      body: formData,
-      credentials: 'include'
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
+      body: formData
     });
+
     const data = await res.json();
-    const msgEl = document.getElementById('upload-message');
-    if (msgEl) msgEl.innerText = data.message || "Upload successful ✅";
-    fileInput.value = '';
+    if (data.success || res.ok) {
+      showMsg('upload-message', '✅ File uploaded successfully!', 'success');
+      fileInput.value = '';
+      titleInput.value = '';
+    } else {
+      showMsg('upload-message', data.message || 'Upload failed.', 'danger');
+    }
   } catch (err) {
-    alert("Upload failed.");
+    console.error('Upload Error:', err);
+    showMsg('upload-message', 'Server error.', 'danger');
   }
-};
+});
+
+// ─── Logout ──────────────────────────────────────────────────────────────────
+document.getElementById('logout-btn')?.addEventListener('click', () => {
+  localStorage.clear();
+  window.location.href = 'index.html';
+});
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-checkAuth();
-loadStudents();
-loadDbLogs();
-loadRestrictions();
+async function init() {
+  await checkAuth();
+  await loadStudents(); // Wait for students to load so tasks can resolve their names
+  loadDbLogs();
+  loadTextLogs();
+  loadRestrictions();
+  loadTasks();
+  loadTeacherAnnouncements();
+}
+
+init();

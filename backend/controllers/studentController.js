@@ -18,10 +18,21 @@ async function getDashboard(req, res, next) {
       $or: [{ assignedTo: 'all' }, { assignedTo: req.user.id }]
     }).sort({ createdAt: -1 });
 
+    // Map tasks to dynamically inject a 'status' for this specific student
+    const processedTasks = tasks
+      .filter(task => !(task.hiddenBy && task.hiddenBy.includes(req.user.id)))
+      .map(task => {
+        const taskObj = task.toObject();
+        taskObj.status = task.completedBy && task.completedBy.includes(req.user.id) 
+          ? 'completed' 
+          : 'pending';
+        return taskObj;
+      });
+
     res.json({
       success: true,
       user: { name: req.user.name, role: req.user.role },
-      tasks
+      tasks: processedTasks
     });
   } catch (err) {
     next(err);
@@ -116,6 +127,7 @@ async function getFiles(req, res) {
     const files = await File.find({
       $or: [
         { assignedTo: 'all' },
+        { assignedTo: req.user.id },
         { assignedTo: req.user.name }
       ]
     });
@@ -125,4 +137,56 @@ async function getFiles(req, res) {
     res.status(500).json({ success: false, message: err.message });
   }
 }
-module.exports = { getDashboard, logActivity, checkUrl, getMyLogs, getFiles };
+async function markTaskComplete(req, res, next) {
+  try {
+    const taskId = req.params.id;
+    const task = await Task.findById(taskId);
+    
+    if (!task) {
+      return res.status(404).json({ success: false, message: 'Task not found.' });
+    }
+
+    if (!task.completedBy) {
+      task.completedBy = [];
+    }
+
+    if (!task.completedBy.includes(req.user.id)) {
+      task.completedBy.push(req.user.id);
+      await task.save();
+      
+      // Log activity
+      logger.logActivity(req.user.name, 'Completed Task', task.title);
+      await ActivityLog.create({
+        userId: req.user.id,
+        userName: req.user.name,
+        action: 'Completed Task',
+        details: task.title
+      });
+    }
+
+    res.json({ success: true, message: 'Task marked as complete.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function clearCompletedTasks(req, res, next) {
+  try {
+    const tasksToHide = await Task.find({
+      completedBy: req.user.id,
+      hiddenBy: { $ne: req.user.id }
+    });
+
+    for (let task of tasksToHide) {
+      if (!task.hiddenBy) task.hiddenBy = [];
+      task.hiddenBy.push(req.user.id);
+      await task.save();
+    }
+
+    res.json({ success: true, message: 'Completed tasks hidden successfully.' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { getDashboard, logActivity, checkUrl, getMyLogs, getFiles, markTaskComplete, clearCompletedTasks };

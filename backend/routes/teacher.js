@@ -14,7 +14,7 @@ const { uploadFile } = require('../controllers/teacherController');
 const {
   getStudents, getLogs, downloadLogs, getDbLogs,
   getRestrictions, addRestriction, removeRestriction,
-  assignTask, getTasks
+  assignTask, getTasks, deleteTask, clearLogs
 } = require('../controllers/teacherController');
 
 // Protect all teacher routes
@@ -32,6 +32,8 @@ router.get('/logs', getLogs);
 router.get('/logs/download', downloadLogs);
 // GET /api/teacher/logs/db — get structured logs from MongoDB
 router.get('/logs/db', getDbLogs);
+// DELETE /api/teacher/logs — clear all database logs
+router.delete('/logs', clearLogs);
 
 // --- Restrictions ---
 // GET /api/teacher/restrictions
@@ -53,6 +55,9 @@ router.delete('/restrictions/:id', removeRestriction);
 // --- Tasks ---
 // GET /api/teacher/tasks
 router.get('/tasks', getTasks);
+
+// DELETE /api/teacher/tasks/:id
+router.delete('/tasks/:id', deleteTask);
 
 // POST /api/teacher/tasks — assign a task
 router.post('/tasks', [

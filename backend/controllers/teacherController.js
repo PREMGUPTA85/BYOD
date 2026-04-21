@@ -173,6 +173,27 @@ const uploadFile = async (req, res) => {
   }
 };
 
+// DELETE /api/teacher/tasks/:id
+async function deleteTask(req, res, next) {
+  try {
+    const task = await Task.findByIdAndDelete(req.params.id);
+    if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
+    res.json({ success: true, message: 'Task deleted successfully' });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// DELETE /api/teacher/logs
+async function clearLogs(req, res, next) {
+  try {
+    await ActivityLog.deleteMany({});
+    res.json({ success: true, message: 'All logs cleared' });
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getStudents,
   getLogs,
@@ -183,5 +204,7 @@ module.exports = {
   removeRestriction,
   assignTask,
   getTasks,
-  uploadFile   
+  uploadFile,
+  deleteTask,
+  clearLogs
 };

@@ -1,8 +1,17 @@
 // public/js/student.js
-const API_BASE = 'https://byod-44n0.onrender.com/api';
 
-// Initialize Socket.io (Ensure CDN is in student.html)
-const socket = io('https://byod-44n0.onrender.com', {
+// ─── HELPER: BASE URL DETECTION ─────────────────────────────────────────────
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_BASE = isLocal 
+  ? 'http://localhost:3000/api' 
+  : 'https://byod-44n0.onrender.com/api';
+
+const SOCKET_URL = isLocal 
+  ? 'http://localhost:3000' 
+  : 'https://byod-44n0.onrender.com';
+
+// Initialize Socket.io
+const socket = io(SOCKET_URL, {
   transports: ['websocket'],
   withCredentials: true
 });
@@ -34,11 +43,46 @@ async function checkAuth() {
   }
 }
 
-// ─── Real-Time Listeners (Socket.io) ──────────────────────────────────────────
+// ─── Real-Time Listeners ─────────────────────────────────────────────────────
 socket.on('announcement', (data) => {
-  // You can replace this with a nice toast/notification UI
-  alert(`📢 Announcement from ${data.from}:\n${data.message}`);
+  const list = document.getElementById('announcement-list');
+  if (list) {
+    const muted = list.querySelector('.muted');
+    if (muted) muted.remove();
+    
+    const time = new Date().toLocaleTimeString();
+    const div = document.createElement('div');
+    div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
+    div.innerHTML = `<strong>${data.from}:</strong> ${data.message} <br><small class="muted">${time}</small>`;
+    list.insertBefore(div, list.firstChild);
+
+    const saved = JSON.parse(localStorage.getItem('student_announcements') || '[]');
+    saved.unshift({ from: data.from, message: data.message, time });
+    localStorage.setItem('student_announcements', JSON.stringify(saved.slice(0, 50)));
+  }
+  
+  const banner = document.getElementById('announcement-banner');
+  const bannerText = document.getElementById('announcement-text');
+  if (banner && bannerText) {
+    bannerText.textContent = `${data.from}: ${data.message}`;
+    banner.classList.remove('hidden');
+    setTimeout(() => { banner.classList.add('hidden'); }, 5000);
+  }
 });
+
+function loadLocalAnnouncements() {
+  const list = document.getElementById('announcement-list');
+  const saved = JSON.parse(localStorage.getItem('student_announcements') || '[]');
+  if (saved.length > 0 && list) {
+    list.innerHTML = '';
+    saved.forEach(a => {
+      const div = document.createElement('div');
+      div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
+      div.innerHTML = `<strong>${a.from}:</strong> ${a.message} <br><small class="muted">${a.time}</small>`;
+      list.appendChild(div);
+    });
+  }
+}
 
 socket.on('new-restriction', (data) => {
   const result = document.getElementById('url-result');
@@ -79,10 +123,11 @@ async function loadTasks() {
         <div style="font-weight:600;margin-bottom:0.25rem;">📌 ${task.title}</div>
         <div class="muted" style="font-size:0.8rem;">${task.description || 'No description.'}</div>
         ${task.dueDate ? `<div class="muted" style="font-size:0.75rem;margin-top:0.3rem;">📅 Due: ${task.dueDate}</div>` : ''}
-        <div style="margin-top:0.5rem;">
+        <div style="margin-top:0.5rem; display:flex; justify-content:space-between; align-items:center;">
           <span class="badge badge-${task.status === 'completed' ? 'success' : task.status === 'in-progress' ? 'warning' : 'muted'}">
             ${task.status}
           </span>
+          ${task.status !== 'completed' ? `<button class="btn btn-primary" style="padding:0.2rem 0.5rem; font-size:0.75rem;" onclick="markTaskComplete('${task._id}')">Mark Complete</button>` : ''}
         </div>
       </div>
     `).join('');
@@ -90,6 +135,43 @@ async function loadTasks() {
     console.error("Failed to load tasks");
   }
 }
+
+window.markTaskComplete = async function(taskId) {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/student/tasks/${taskId}/complete`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadTasks();
+      loadMyLogs();
+    } else {
+      alert(data.message || 'Failed to complete task.');
+    }
+  } catch (err) {
+    console.error("Error completing task", err);
+  }
+};
+
+document.getElementById('clear-tasks-btn')?.addEventListener('click', async () => {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/student/tasks/clear-completed`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+    if (data.success) {
+      loadTasks();
+    } else {
+      alert(data.message || 'Failed to clear tasks.');
+    }
+  } catch (err) {
+    console.error('Error clearing tasks', err);
+  }
+});
 
 async function loadMyLogs() {
   const token = localStorage.getItem('token');
@@ -134,8 +216,8 @@ async function loadFiles() {
     }
 
     container.innerHTML = data.files.map(file => `
-      <div class="file-item" style="margin-bottom:8px; padding: 5px; border-bottom: 1px hideen var(--border);">
-        📄 <a href="https://byod-44n0.onrender.com${file.fileUrl}" target="_blank" style="text-decoration:none; color:var(--primary);">
+      <div class="file-item" style="margin-bottom:8px; padding: 5px; border-bottom: 1px dotted var(--border);">
+        📄 <a href="${SOCKET_URL}${file.fileUrl}" target="_blank" style="text-decoration:none; color:var(--primary);">
           ${file.title}
         </a>
       </div>
@@ -233,7 +315,6 @@ document.getElementById('reset-timer-btn')?.addEventListener('click', () => {
 // Logout
 document.getElementById('logout-btn')?.addEventListener('click', async () => {
   const token = localStorage.getItem('token');
-  // Optional: notify server of logout
   await fetch(`${API_BASE}/auth/logout`, { 
     method: 'POST', 
     headers: { 'Authorization': `Bearer ${token}` } 
@@ -248,3 +329,4 @@ checkAuth();
 loadTasks();
 loadMyLogs();
 loadFiles();
+loadLocalAnnouncements();

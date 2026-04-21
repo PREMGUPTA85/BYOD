@@ -6,8 +6,7 @@ const express = require('express');
 const router = express.Router();
 const authenticateToken = require('../middleware/authMiddleware');
 const requireRole = require('../middleware/roleMiddleware');
-const { getDashboard, logActivity, checkUrl, getMyLogs } = require('../controllers/studentController');
-const { getFiles } = require('../controllers/studentController');
+const { getDashboard, logActivity, checkUrl, getMyLogs, getFiles, markTaskComplete, clearCompletedTasks } = require('../controllers/studentController');
 // Apply authentication to all student routes
 router.use(authenticateToken);
 // Apply role check to all student routes
@@ -15,6 +14,12 @@ router.use(requireRole('student'));
 
 // GET /api/student/dashboard — view assigned tasks
 router.get('/dashboard', getDashboard);
+
+// PUT /api/student/tasks/:id/complete — mark a task as complete
+router.put('/tasks/:id/complete', markTaskComplete);
+
+// PUT /api/student/tasks/clear-completed — hide completed tasks
+router.put('/tasks/clear-completed', clearCompletedTasks);
 
 
 router.get('/files', getFiles);
