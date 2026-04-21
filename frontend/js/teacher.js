@@ -285,11 +285,23 @@ async function loadRestrictions() {
     const data = await res.json();
     const tbody = document.getElementById('restrictions-body');
 
+    if (!data.success || !data.restrictions) {
+      if (data.message === 'Invalid token.') {
+        alert('Session expired. Please log out and log back in.');
+        window.location.href = '/index.html';
+      }
+      return;
+    }
+
     if (document.getElementById('stat-restrictions')) {
-      document.getElementById('stat-restrictions').textContent = data.restrictions ? data.restrictions.length : 0;
+      document.getElementById('stat-restrictions').textContent = data.restrictions.length;
     }
 
     if (tbody) {
+      if (data.restrictions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="muted center">No URLs are currently restricted.</td></tr>';
+        return;
+      }
       tbody.innerHTML = data.restrictions.map(r => `
         <tr>
           <td><span class="badge badge-danger">🚫 ${r.url}</span></td>
