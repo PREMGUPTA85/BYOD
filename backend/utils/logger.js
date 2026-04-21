@@ -11,6 +11,12 @@ class ActivityLogger extends EventEmitter {
   constructor() {
     super();
     this.logFile = path.join(__dirname, '../logs/activity.log');
+    
+    // Ensure the logs directory exists
+    const logDir = path.dirname(this.logFile);
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
 
     // Listen for 'log' events and write them to the file
     this.on('log', (entry) => {
