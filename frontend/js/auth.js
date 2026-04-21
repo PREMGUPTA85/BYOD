@@ -4,7 +4,7 @@
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const API_BASE = isLocal 
   ? 'http://localhost:3000/api' 
-  : 'https://byod-44n0.onrender.com/api';
+  : 'https://byod-1.onrender.com/api';
 
 // ─── HELPER: SHOW MESSAGES ──────────────────────────────────────────────────
 function showMessage(elementId, text, type) {
