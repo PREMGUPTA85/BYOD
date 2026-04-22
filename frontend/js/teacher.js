@@ -471,7 +471,11 @@ document.getElementById('upload-file-btn')?.addEventListener('click', async () =
   xhr.upload.onprogress = function(e) {
     if (e.lengthComputable) {
       const percentComplete = Math.round((e.loaded / e.total) * 100);
-      uploadBtn.textContent = `Uploading... ${percentComplete}%`;
+      if (percentComplete === 100) {
+        uploadBtn.textContent = 'Processing...';
+      } else {
+        uploadBtn.textContent = `Uploading... ${percentComplete}%`;
+      }
     }
   };
 
