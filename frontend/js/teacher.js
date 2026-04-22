@@ -455,7 +455,7 @@ document.getElementById('upload-file-btn')?.addEventListener('click', async () =
   // Show loading state
   uploadBtn.disabled = true;
   const originalBtnText = uploadBtn.textContent;
-  uploadBtn.textContent = 'Uploading... Please wait';
+  uploadBtn.textContent = 'Uploading... 0%';
   showMsg('upload-message', 'Starting upload...', 'warning');
 
   const formData = new FormData();
@@ -463,31 +463,50 @@ document.getElementById('upload-file-btn')?.addEventListener('click', async () =
   formData.append('title', title);
   formData.append('assignedTo', assignedTo);
 
-  try {
-    const res = await fetch(`${API_BASE}/teacher/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      },
-      body: formData
-    });
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', `${API_BASE}/teacher/upload`, true);
+  xhr.setRequestHeader('Authorization', `Bearer ${token}`);
 
-    const data = await res.json();
-    if (data.success || res.ok) {
-      showMsg('upload-message', '✅ File uploaded successfully!', 'success');
-      fileInput.value = '';
-      titleInput.value = '';
-    } else {
-      showMsg('upload-message', data.message || 'Upload failed.', 'danger');
+  // Upload progress event
+  xhr.upload.onprogress = function(e) {
+    if (e.lengthComputable) {
+      const percentComplete = Math.round((e.loaded / e.total) * 100);
+      uploadBtn.textContent = `Uploading... ${percentComplete}%`;
     }
-  } catch (err) {
-    console.error('Upload Error:', err);
-    showMsg('upload-message', 'Server error.', 'danger');
-  } finally {
-    // Restore button state
+  };
+
+  // Response handling
+  xhr.onload = function() {
     uploadBtn.disabled = false;
     uploadBtn.textContent = originalBtnText;
-  }
+
+    if (xhr.status >= 200 && xhr.status < 300) {
+      try {
+        const data = JSON.parse(xhr.responseText);
+        if (data.success) {
+          showMsg('upload-message', '✅ File uploaded successfully!', 'success');
+          fileInput.value = '';
+          titleInput.value = '';
+        } else {
+          showMsg('upload-message', data.message || 'Upload failed.', 'danger');
+        }
+      } catch (err) {
+        showMsg('upload-message', '✅ File uploaded successfully!', 'success');
+        fileInput.value = '';
+        titleInput.value = '';
+      }
+    } else {
+      showMsg('upload-message', 'Server error during upload.', 'danger');
+    }
+  };
+
+  xhr.onerror = function() {
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = originalBtnText;
+    showMsg('upload-message', 'Connection error.', 'danger');
+  };
+
+  xhr.send(formData);
 });
 
 // ─── Logout ──────────────────────────────────────────────────────────────────
