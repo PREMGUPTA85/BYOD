@@ -432,6 +432,7 @@ document.getElementById('send-announcement-btn')?.addEventListener('click', () =
 
 // ─── Upload Study Material ────────────────────────────────────────────────────
 document.getElementById('upload-file-btn')?.addEventListener('click', async () => {
+  const uploadBtn = document.getElementById('upload-file-btn');
   const fileInput = document.getElementById('fileInput');
   const titleInput = document.getElementById('file-title');
   const assignSelect = document.getElementById('file-assign');
@@ -444,6 +445,12 @@ document.getElementById('upload-file-btn')?.addEventListener('click', async () =
     showMsg('upload-message', 'Please select a file.', 'danger');
     return;
   }
+
+  // Show loading state
+  uploadBtn.disabled = true;
+  const originalBtnText = uploadBtn.textContent;
+  uploadBtn.textContent = 'Uploading... Please wait';
+  showMsg('upload-message', 'Starting upload...', 'warning');
 
   const formData = new FormData();
   formData.append('file', file);
@@ -470,6 +477,10 @@ document.getElementById('upload-file-btn')?.addEventListener('click', async () =
   } catch (err) {
     console.error('Upload Error:', err);
     showMsg('upload-message', 'Server error.', 'danger');
+  } finally {
+    // Restore button state
+    uploadBtn.disabled = false;
+    uploadBtn.textContent = originalBtnText;
   }
 });
 
