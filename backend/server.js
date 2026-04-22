@@ -98,12 +98,20 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
 
-  socket.on('announcement', (data) => {
-    io.emit('announcement', {
-      message: data.message,
-      from: data.from || 'Teacher',
-      time: new Date().toLocaleTimeString()
-    });
+  socket.on('announcement', async (data) => {
+    try {
+      const Announcement = require('./models/Announcement');
+      const newAnn = new Announcement({ message: data.message, from: data.from || 'Teacher' });
+      await newAnn.save();
+      
+      io.emit('announcement', {
+        message: newAnn.message,
+        from: newAnn.from,
+        time: newAnn.createdAt.toLocaleTimeString()
+      });
+    } catch (err) {
+      console.error('Error saving announcement:', err);
+    }
   });
 
   socket.on('alert-student', (data) => {

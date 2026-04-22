@@ -137,6 +137,19 @@ async function getFiles(req, res) {
     res.status(500).json({ success: false, message: err.message });
   }
 }
+
+// GET /api/student/announcements
+// Get latest announcements from teacher
+async function getAnnouncements(req, res, next) {
+  try {
+    const Announcement = require('../models/Announcement');
+    const announcements = await Announcement.find().sort({ createdAt: -1 }).limit(50);
+    res.json({ success: true, announcements });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function markTaskComplete(req, res, next) {
   try {
     const taskId = req.params.id;
@@ -189,4 +202,4 @@ async function clearCompletedTasks(req, res, next) {
   }
 }
 
-module.exports = { getDashboard, logActivity, checkUrl, getMyLogs, getFiles, markTaskComplete, clearCompletedTasks };
+module.exports = { getDashboard, logActivity, checkUrl, getMyLogs, getFiles, getAnnouncements, markTaskComplete, clearCompletedTasks };

@@ -46,15 +46,11 @@ socket.on('announcement', (data) => {
     const muted = list.querySelector('.muted');
     if (muted) muted.remove();
     
-    const time = new Date().toLocaleTimeString();
+    const time = data.time || new Date().toLocaleTimeString();
     const div = document.createElement('div');
     div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
     div.innerHTML = `<strong>${data.from}:</strong> ${data.message} <br><small class="muted">${time}</small>`;
     list.insertBefore(div, list.firstChild);
-
-    const saved = JSON.parse(localStorage.getItem('student_announcements') || '[]');
-    saved.unshift({ from: data.from, message: data.message, time });
-    localStorage.setItem('student_announcements', JSON.stringify(saved.slice(0, 50)));
   }
   
   const banner = document.getElementById('announcement-banner');
@@ -66,17 +62,27 @@ socket.on('announcement', (data) => {
   }
 });
 
-function loadLocalAnnouncements() {
-  const list = document.getElementById('announcement-list');
-  const saved = JSON.parse(localStorage.getItem('student_announcements') || '[]');
-  if (saved.length > 0 && list) {
-    list.innerHTML = '';
-    saved.forEach(a => {
-      const div = document.createElement('div');
-      div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
-      div.innerHTML = `<strong>${a.from}:</strong> ${a.message} <br><small class="muted">${a.time}</small>`;
-      list.appendChild(div);
+async function loadAnnouncements() {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/student/announcements`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
+    const data = await res.json();
+    const list = document.getElementById('announcement-list');
+    
+    if (list && data.success && data.announcements.length > 0) {
+      list.innerHTML = '';
+      data.announcements.forEach(a => {
+        const time = new Date(a.createdAt).toLocaleTimeString();
+        const div = document.createElement('div');
+        div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
+        div.innerHTML = `<strong>${a.from}:</strong> ${a.message} <br><small class="muted">${time}</small>`;
+        list.appendChild(div);
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load announcements", err);
   }
 }
 
@@ -325,4 +331,4 @@ checkAuth();
 loadTasks();
 loadMyLogs();
 loadFiles();
-loadLocalAnnouncements();
+loadAnnouncements();

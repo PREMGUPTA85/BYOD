@@ -14,7 +14,7 @@ const { uploadFile } = require('../controllers/teacherController');
 const {
   getStudents, getLogs, downloadLogs, getDbLogs,
   getRestrictions, addRestriction, removeRestriction,
-  assignTask, getTasks, deleteTask, clearLogs
+  assignTask, getTasks, getAnnouncements, deleteTask, clearLogs
 } = require('../controllers/teacherController');
 
 // Protect all teacher routes
@@ -55,6 +55,9 @@ router.delete('/restrictions/:id', removeRestriction);
 // --- Tasks ---
 // GET /api/teacher/tasks
 router.get('/tasks', getTasks);
+
+// GET /api/teacher/announcements
+router.get('/announcements', getAnnouncements);
 
 // DELETE /api/teacher/tasks/:id
 router.delete('/tasks/:id', deleteTask);

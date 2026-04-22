@@ -143,6 +143,17 @@ async function getTasks(req, res, next) {
   }
 }
 
+// GET /api/teacher/announcements
+async function getAnnouncements(req, res, next) {
+  try {
+    const Announcement = require('../models/Announcement');
+    const announcements = await Announcement.find().sort({ createdAt: -1 }).limit(50);
+    res.json({ success: true, announcements });
+  } catch (err) {
+    next(err);
+  }
+}
+
 const uploadFile = async (req, res) => {
   try {
     console.log("📥 BODY:", req.body);
@@ -204,6 +215,7 @@ module.exports = {
   removeRestriction,
   assignTask,
   getTasks,
+  getAnnouncements,
   uploadFile,
   deleteTask,
   clearLogs

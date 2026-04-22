@@ -389,17 +389,27 @@ document.getElementById('task-form')?.addEventListener('submit', async (e) => {
 });
 
 // ─── Send Announcement ────────────────────────────────────────────────────────
-function loadTeacherAnnouncements() {
-  const list = document.getElementById('sent-announcements');
-  const saved = JSON.parse(localStorage.getItem('teacher_announcements') || '[]');
-  if (saved.length > 0 && list) {
-    list.innerHTML = '';
-    saved.forEach(a => {
-      const div = document.createElement('div');
-      div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
-      div.innerHTML = `<strong>You:</strong> ${a.message} <br><small class="muted">${a.time}</small>`;
-      list.appendChild(div);
+async function loadTeacherAnnouncements() {
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/teacher/announcements`, {
+      headers: { 'Authorization': `Bearer ${token}` }
     });
+    const data = await res.json();
+    const list = document.getElementById('sent-announcements');
+    
+    if (list && data.success && data.announcements.length > 0) {
+      list.innerHTML = '';
+      data.announcements.forEach(a => {
+        const time = new Date(a.createdAt).toLocaleTimeString();
+        const div = document.createElement('div');
+        div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
+        div.innerHTML = `<strong>You:</strong> ${a.message} <br><small class="muted">${time}</small>`;
+        list.appendChild(div);
+      });
+    }
+  } catch (err) {
+    console.error("Failed to load teacher announcements", err);
   }
 }
 
@@ -423,10 +433,6 @@ document.getElementById('send-announcement-btn')?.addEventListener('click', () =
     div.style = "padding: 0.5rem; border-bottom: 1px solid var(--border);";
     div.innerHTML = `<strong>You:</strong> ${text} <br><small class="muted">${time}</small>`;
     list.insertBefore(div, list.firstChild);
-
-    const saved = JSON.parse(localStorage.getItem('teacher_announcements') || '[]');
-    saved.unshift({ message: text, time });
-    localStorage.setItem('teacher_announcements', JSON.stringify(saved.slice(0, 50)));
   }
 });
 
