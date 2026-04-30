@@ -94,6 +94,12 @@ app.get('/', (req, res) => {
   res.json({ message: 'BYOD Classroom API is running.' });
 });
 
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'OK' });
+});
+
+
 // ─── SOCKET.IO LOGIC ────────────────────────────────────────────────────────
 io.on('connection', (socket) => {
   console.log('🔌 Client connected:', socket.id);
