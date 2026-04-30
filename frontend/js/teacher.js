@@ -2,9 +2,9 @@
 
 // ─── HELPER: BASE URL DETECTION ─────────────────────────────────────────────
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_BASE = 'https://byod-44n0.onrender.com/api';
+const API_BASE = 'https://byod-1.onrender.com/api';
 
-const SOCKET_URL = 'https://byod-44n0.onrender.com';
+const SOCKET_URL = 'https://byod-1.onrender.com';
 
 // Initialize Socket.IO
 const socket = io(SOCKET_URL, {
